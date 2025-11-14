@@ -145,11 +145,17 @@ class BlackjackApp {
       case 'split':
         this.gameController.split();
         break;
-      case 'insurance':
+      case 'acceptInsurance':
         this.gameController.takeInsurance();
+        break;
+      case 'declineInsurance':
+        this.gameController.declineInsurance();
         break;
       case 'surrender':
         this.gameController.surrender();
+        break;
+      case 'betAgain':
+        this.gameController.betAgain();
         break;
       case 'betAndDealAgain':
         const betAmount = state.currentBet || 25;
@@ -209,11 +215,15 @@ class BlackjackApp {
 
     // Update betting interface
     this.bettingInterface.updateBalance(state.playerBalance);
-    this.bettingInterface.show(
-      state.phase === GamePhase.IDLE || 
-      state.phase === GamePhase.BETTING ||
-      state.phase === GamePhase.GAME_OVER
-    );
+    const showBetting = state.phase === GamePhase.IDLE || 
+                       state.phase === GamePhase.BETTING ||
+                       state.phase === GamePhase.GAME_OVER;
+    this.bettingInterface.show(showBetting);
+    
+    // If in betting phase and there's a current bet, set it in the interface
+    if (state.phase === GamePhase.BETTING && state.currentBet > 0) {
+      this.bettingInterface.setBetAmount(state.currentBet);
+    }
 
     // Reveal dealer card when transitioning to dealer turn
     if (state.phase === GamePhase.DEALER_TURN) {

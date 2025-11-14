@@ -1,7 +1,7 @@
 import { GamePhase } from '../types/GameState';
 import { Hand } from '../game/Hand';
 
-export type ControlAction = 'hit' | 'stand' | 'double' | 'split' | 'insurance' | 'surrender' | 'betAndDealAgain';
+export type ControlAction = 'hit' | 'stand' | 'double' | 'split' | 'acceptInsurance' | 'declineInsurance' | 'surrender' | 'betAgain' | 'betAndDealAgain';
 
 export class ControlPanel {
   private container: HTMLDivElement;
@@ -21,8 +21,10 @@ export class ControlPanel {
       { action: 'stand', label: 'Stand', className: 'btn-primary' },
       { action: 'double', label: 'Double Down', className: 'btn-secondary' },
       { action: 'split', label: 'Split', className: 'btn-secondary' },
-      { action: 'insurance', label: 'Insurance', className: 'btn-secondary' },
+      { action: 'acceptInsurance', label: 'Accept', className: 'btn-secondary' },
+      { action: 'declineInsurance', label: 'Decline', className: 'btn-secondary' },
       { action: 'surrender', label: 'Surrender', className: 'btn-secondary' },
+      { action: 'betAgain', label: 'Bet Again', className: 'btn-primary' },
       { action: 'betAndDealAgain', label: 'Bet & Deal Again', className: 'btn-primary bet-deal-again' }
     ];
 
@@ -58,36 +60,39 @@ export class ControlPanel {
         break;
 
       case GamePhase.PLAYER_TURN:
-        // Show player action buttons
-        this.setButtonState('hit', true, playerHand.isBusted === false);
-        this.setButtonState('stand', true, playerHand.isBusted === false);
-        this.setButtonState('double', true, 
-          playerHand.canDoubleDown() && 
-          !playerHand.isBusted && 
-          playerBalance >= currentBet
-        );
-        this.setButtonState('split', true, 
-          playerHand.canSplit() && 
-          !playerHand.isBusted && 
-          playerBalance >= currentBet
-        );
-        this.setButtonState('surrender', true, 
-          playerHand.cards.length === 2 && 
-          !playerHand.isBusted
-        );
-        
-        // Insurance button
+        // If insurance is offered and not yet taken, show only Accept/Decline buttons
         if (insuranceOffered && !insuranceTaken) {
-          this.setButtonState('insurance', true, playerBalance >= currentBet / 2);
+          this.setButtonState('acceptInsurance', true, playerBalance >= currentBet / 2);
+          this.setButtonState('declineInsurance', true, true);
+          // All other buttons remain hidden/disabled
+        } else {
+          // Show normal player action buttons
+          this.setButtonState('hit', true, playerHand.isBusted === false);
+          this.setButtonState('stand', true, playerHand.isBusted === false);
+          this.setButtonState('double', true, 
+            playerHand.canDoubleDown() && 
+            !playerHand.isBusted && 
+            playerBalance >= currentBet
+          );
+          this.setButtonState('split', true, 
+            playerHand.canSplit() && 
+            !playerHand.isBusted && 
+            playerBalance >= currentBet
+          );
+          this.setButtonState('surrender', true, 
+            playerHand.cards.length === 2 && 
+            !playerHand.isBusted
+          );
         }
         break;
 
       case GamePhase.RESULT:
       case GamePhase.GAME_OVER:
-        // Show bet and deal again button
-        this.setButtonState('betAndDealAgain', true, 
-          phase === GamePhase.RESULT && playerBalance >= 5
-        );
+        // Show both Bet Again and Bet & Deal Again buttons in RESULT phase
+        if (phase === GamePhase.RESULT && playerBalance >= 5) {
+          this.setButtonState('betAgain', true, true);
+          this.setButtonState('betAndDealAgain', true, true);
+        }
         break;
 
       default:

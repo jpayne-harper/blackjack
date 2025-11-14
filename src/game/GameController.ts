@@ -312,6 +312,10 @@ export class GameController {
   }
 
   private endHand(): void {
+    // Store the bet amount for potential reuse, then reset it
+    // The bet amount is already reflected in the balance (wins/losses applied)
+    // We'll keep currentBet for betAgain/betAndDealAgain to use
+    
     // Check if game over
     if (this.state.playerBalance < this.MIN_BET) {
       this.state.phase = GamePhase.GAME_OVER;
@@ -336,7 +340,29 @@ export class GameController {
       return;
     }
 
-    this.setBet(bet);
+    // Set the bet and automatically deal
+    this.state.currentBet = bet;
+    this.state.playerBalance -= bet;
+    this.state.phase = GamePhase.DEALING;
+    this.deal();
+  }
+
+  betAgain(): void {
+    if (this.state.phase !== GamePhase.RESULT && this.state.phase !== GamePhase.GAME_OVER) {
+      return;
+    }
+
+    if (this.state.playerBalance < this.MIN_BET) {
+      this.state.phase = GamePhase.GAME_OVER;
+      this.state.message = 'Game Over! Insufficient balance to continue.';
+      return;
+    }
+
+    // Set bet to previous amount but stay in BETTING phase for user to adjust
+    const previousBet = this.state.currentBet || this.MIN_BET;
+    this.state.currentBet = Math.min(previousBet, this.state.playerBalance);
+    this.state.phase = GamePhase.BETTING;
+    this.state.message = 'Adjust your bet amount if needed, then click Deal';
   }
 
   resetGame(newStartingBalance?: number): void {
