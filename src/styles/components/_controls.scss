@@ -1,0 +1,127 @@
+@use '../variables' as *;
+@use '../mixins' as *;
+
+.control-panel {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  margin: $spacing-lg 0;
+  padding: $spacing-md;
+}
+
+.game-button {
+  padding: $spacing-sm $spacing-lg;
+  font-size: 1rem;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 120px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.btn-primary {
+    @include button-primary;
+  }
+
+  &.btn-secondary {
+    @include button-secondary;
+  }
+
+  &.bet-deal-again {
+    min-width: 180px;
+    font-size: 1.1rem;
+  }
+
+  @include responsive-mobile {
+    min-width: 100px;
+    padding: $spacing-xs $spacing-md;
+    font-size: 0.9rem;
+  }
+}
+
+.betting-interface {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-lg;
+  padding: $spacing-lg;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  margin: $spacing-lg auto;
+  max-width: 500px;
+}
+
+.starting-balance-container,
+.bet-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
+  width: 100%;
+}
+
+.balance-input,
+.bet-input {
+  padding: $spacing-sm;
+  font-size: 1.1rem;
+  border: 2px solid $primary-color;
+  border-radius: 6px;
+  background-color: rgba(255, 255, 255, 0.9);
+  color: $text-dark;
+  text-align: center;
+  width: 150px;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-hover;
+    box-shadow: 0 0 8px rgba(135, 206, 235, 0.5);
+  }
+}
+
+.bet-slider {
+  width: 100%;
+  max-width: 300px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, $primary-color, $primary-hover);
+  outline: none;
+  -webkit-appearance: none;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: $secondary-color;
+    cursor: pointer;
+    transition: background $transition-normal;
+
+    &:hover {
+      background: $secondary-hover;
+    }
+  }
+
+  &::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: $secondary-color;
+    cursor: pointer;
+    border: none;
+    transition: background $transition-normal;
+
+    &:hover {
+      background: $secondary-hover;
+    }
+  }
+}
+
+label {
+  color: $text-light;
+  font-weight: bold;
+  font-size: 1.1rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+

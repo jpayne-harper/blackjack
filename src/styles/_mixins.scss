@@ -1,0 +1,77 @@
+@use 'variables' as *;
+
+@mixin button-primary {
+  background-color: $primary-color;
+  color: $text-light;
+  border: 2px solid $primary-color;
+  transition: all $transition-normal;
+
+  &:hover:not(:disabled) {
+    background-color: $primary-hover;
+    border-color: $primary-hover;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin button-secondary {
+  background-color: $secondary-color;
+  color: $text-dark;
+  border: 2px solid $secondary-color;
+  transition: all $transition-normal;
+
+  &:hover:not(:disabled) {
+    background-color: $secondary-hover;
+    border-color: $secondary-hover;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin card-style {
+  width: $card-width;
+  height: $card-height;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform $transition-normal;
+}
+
+@mixin responsive-mobile {
+  @media (max-width: $mobile-max) {
+    @content;
+  }
+}
+
+@mixin responsive-tablet {
+  @media (min-width: $tablet-min) and (max-width: $tablet-max) {
+    @content;
+  }
+}
+
+@mixin responsive-desktop {
+  @media (min-width: $desktop-min) {
+    @content;
+  }
+}
+

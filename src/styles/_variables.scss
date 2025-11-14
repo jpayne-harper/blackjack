@@ -1,0 +1,35 @@
+// Colors
+$primary-color: #001f3f;        // Navy Blue
+$primary-hover: #87ceeb;         // Sky Blue
+$secondary-color: #ffd700;       // Gold
+$secondary-hover: #b8860b;       // Dark Mustard Yellow
+$table-green: #0d5d2a;          // Table background color
+$text-light: #ffffff;
+$text-dark: #000000;
+$text-muted: #cccccc;
+$error-color: #dc3545;
+$success-color: #28a745;
+$warning-color: #ffc107;
+
+// Spacing
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+
+// Card dimensions
+$card-width: 79px;
+$card-height: 123px;
+
+// Breakpoints
+$mobile-max: 479px;
+$tablet-min: 480px;
+$tablet-max: 767px;
+$desktop-min: 768px;
+
+// Transitions
+$transition-fast: 0.2s ease;
+$transition-normal: 0.3s ease;
+$transition-slow: 0.5s ease;
+

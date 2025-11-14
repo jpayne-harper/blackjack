@@ -1,0 +1,50 @@
+@use '../variables' as *;
+
+.hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: $spacing-md 0;
+
+  &.dealer-hand {
+    margin-bottom: $spacing-xl;
+  }
+
+  &.player-hand {
+    margin-top: $spacing-xl;
+  }
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  min-height: calc(#{$card-height} + #{$spacing-md});
+
+  &.bust {
+    opacity: 0.6;
+  }
+
+  &.blackjack {
+    .card {
+      animation: winPulse 1s ease-in-out;
+    }
+  }
+
+  &.win {
+    .card {
+      animation: winPulse 1s ease-in-out;
+    }
+  }
+}
+
+.hand-value {
+  margin-top: $spacing-sm;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: $text-light;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  min-height: 2rem;
+}
+
