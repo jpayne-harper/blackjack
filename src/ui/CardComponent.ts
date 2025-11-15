@@ -11,13 +11,22 @@ export class CardComponent {
     if (isFaceDown) {
       this.element.classList.add('face-down');
       this.element.style.backgroundImage = `url(${ImageMapper.getCardBackPath()})`;
-    } else if (card) {
-      this.element.style.backgroundImage = `url(${ImageMapper.getCardImagePath(card)})`;
+    } else {
+      this.element.classList.add('face-up');
+      if (card) {
+        this.element.style.backgroundImage = `url(${ImageMapper.getCardImagePath(card)})`;
+      }
     }
 
     if (delay > 0) {
       this.element.style.animationDelay = `${delay}ms`;
       this.element.classList.add('dealing');
+      // console.log('dealing', this.element);
+      // setTimeout(() => {
+      //   console.log('card dealt', this.element);
+      //   this.element.classList.remove('dealing');
+      //   this.element.style.animationDelay = '0ms';
+      // }, 1000);
     }
   }
 
@@ -34,6 +43,7 @@ export class CardComponent {
 
   reveal(): void {
     this.element.classList.remove('face-down');
+    this.element.classList.add('face-up');
   }
 
   addWinAnimation(): void {

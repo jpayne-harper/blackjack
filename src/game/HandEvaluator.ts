@@ -85,10 +85,13 @@ export class HandEvaluator {
 
   /**
    * Check if dealer shows Ace (for insurance)
+   * Only checks the first card (face-up card, index 0)
+   * The second card (face-down, index 1) is not considered
    */
   static dealerShowsAce(dealerCards: Card[]): boolean {
     if (dealerCards.length === 0) return false;
-    return dealerCards[0].rank === Rank.ACE;
+    // Only check the face-up card (second card, index 1)
+    return dealerCards[1].rank === Rank.ACE;
   }
 }
 

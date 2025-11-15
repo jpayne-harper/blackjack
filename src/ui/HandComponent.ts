@@ -25,6 +25,9 @@ export class HandComponent {
   }
 
   updateHand(hand: Hand, showHiddenCard: boolean = false): void {
+    // Clear animation classes before updating
+    this.clearAnimations();
+    
     // Clear existing cards
     this.cardsContainer.innerHTML = '';
 
@@ -55,15 +58,22 @@ export class HandComponent {
       this.cardsContainer.classList.add('bust');
     } else if (hand.isBlackjack) {
       this.cardsContainer.classList.add('blackjack');
+      // console.log('blackjack', this.cardsContainer);
+      this.revealHiddenCard();
     }
   }
 
   revealHiddenCard(): void {
-    const firstCard = this.cardsContainer.querySelector('.card.face-down');
+    console.log('revealing hidden card');
+    // const firstCard = this.cardsContainer.querySelector('.card.face-down');
+    const firstCard = this.cardsContainer.querySelector('.card.face-up.dealing');
     if (firstCard) {
       const cardComponent = firstCard as HTMLElement;
-      cardComponent.classList.remove('face-down');
+      // console.log('firstCard', firstCard);
+      // cardComponent.classList.remove('face-down');
+      cardComponent.classList.remove('dealing');
       cardComponent.classList.add('flipping');
+      
     }
   }
 

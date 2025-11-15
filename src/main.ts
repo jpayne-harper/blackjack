@@ -155,9 +155,21 @@ class BlackjackApp {
         this.gameController.surrender();
         break;
       case 'betAgain':
+        // Clear animations before starting new hand
+        this.dealerHandComponent.clearAnimations();
+        this.playerHandComponent.clearAnimations();
+        if (this.playerSplitHandComponent) {
+          this.playerSplitHandComponent.clearAnimations();
+        }
         this.gameController.betAgain();
         break;
       case 'betAndDealAgain':
+        // Clear animations before starting new hand
+        this.dealerHandComponent.clearAnimations();
+        this.playerHandComponent.clearAnimations();
+        if (this.playerSplitHandComponent) {
+          this.playerSplitHandComponent.clearAnimations();
+        }
         const betAmount = state.currentBet || 25;
         this.gameController.betAndDealAgain(betAmount);
         break;
@@ -176,9 +188,12 @@ class BlackjackApp {
     );
 
     // Update hands
-    const showDealerCard = state.phase !== GamePhase.DEALING && 
-                          state.phase !== GamePhase.PLAYER_TURN &&
-                          state.phase !== GamePhase.BETTING;
+    // Show dealer cards when: not dealing/betting, or when blackjack is detected
+    const showDealerCard = (state.phase !== GamePhase.DEALING && 
+                           state.phase !== GamePhase.PLAYER_TURN &&
+                           state.phase !== GamePhase.BETTING) ||
+                           state.dealerHand.isBlackjack ||
+                           state.playerHand.isBlackjack;
     
     this.dealerHandComponent.updateHand(state.dealerHand, showDealerCard);
     this.playerHandComponent.updateHand(state.playerHand, true);
