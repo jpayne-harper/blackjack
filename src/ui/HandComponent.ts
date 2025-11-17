@@ -5,6 +5,7 @@ export class HandComponent {
   private container: HTMLDivElement;
   private valueDisplay: HTMLDivElement;
   private cardsContainer: HTMLDivElement;
+  private deck: HTMLDivElement;
 
   constructor(isDealer: boolean = false) {
     this.container = document.createElement('div');
@@ -18,6 +19,12 @@ export class HandComponent {
 
     this.container.appendChild(this.cardsContainer);
     this.container.appendChild(this.valueDisplay);
+
+    if (isDealer) {
+      this.deck = document.createElement('div');
+      this.deck.className = 'deck';
+      this.cardsContainer.appendChild(this.deck);
+    }
   }
 
   getElement(): HTMLDivElement {

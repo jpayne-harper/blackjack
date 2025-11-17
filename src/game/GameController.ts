@@ -75,9 +75,13 @@ export class GameController {
 
     // Deal initial cards
     const card1 = this.deckManager.dealCard();
-    const card2 = this.deckManager.dealCard();
+    console.log('card1', card1);
     const dealerCard1 = this.deckManager.dealCard();
+    console.log('dealerCard1', dealerCard1);
+    const card2 = this.deckManager.dealCard();
+    console.log('card2', card2);
     const dealerCard2 = this.deckManager.dealCard();
+    console.log('dealerCard2', dealerCard2);
 
     if (!card1 || !card2 || !dealerCard1 || !dealerCard2) {
       this.state.message = 'Error: Unable to deal cards';
@@ -85,10 +89,11 @@ export class GameController {
     }
 
     this.state.playerHand.addCard(card1);
-    this.state.playerHand.addCard(card2);
     this.state.dealerHand.addCard(dealerCard1);
+    this.state.playerHand.addCard(card2);
     this.state.dealerHand.addCard(dealerCard2);
 
+    
     // Check for insurance opportunity
     if (HandEvaluator.dealerShowsAce(this.state.dealerHand.cards)) {
       this.state.insuranceOffered = true;
