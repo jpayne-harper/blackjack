@@ -23,5 +23,7 @@ export interface GameState {
   message: string;
   insuranceOffered: boolean;
   insuranceTaken: boolean;
+  activeHand: 'main' | 'split';  // Track which hand is currently being played
+  mainHandComplete: boolean;      // Track if main hand is done (for split scenarios)
 }
 

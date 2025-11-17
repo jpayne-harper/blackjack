@@ -45,7 +45,7 @@ export class ControlPanel {
     return this.container;
   }
 
-  updateState(phase: GamePhase, playerHand: Hand, dealerHand: Hand, insuranceOffered: boolean, insuranceTaken: boolean, playerBalance: number, currentBet: number): void {
+  updateState(phase: GamePhase, playerHand: Hand, dealerHand: Hand, insuranceOffered: boolean, insuranceTaken: boolean, playerBalance: number, currentBet: number, activeHand?: 'main' | 'split', playerSplitHand?: Hand): void {
     // Reset all buttons
     this.buttons.forEach(btn => {
       btn.disabled = true;
@@ -66,22 +66,33 @@ export class ControlPanel {
           this.setButtonState('declineInsurance', true, true);
           // All other buttons remain hidden/disabled
         } else {
-          // Show normal player action buttons
-          this.setButtonState('hit', true, playerHand.isBusted === false);
-          this.setButtonState('stand', true, playerHand.isBusted === false);
+          // Get the active hand for split scenarios
+          const activeHandObj = (activeHand === 'split' && playerSplitHand) ? playerSplitHand : playerHand;
+          
+          // Show normal player action buttons based on active hand
+          this.setButtonState('hit', true, activeHandObj.isBusted === false);
+          this.setButtonState('stand', true, activeHandObj.isBusted === false);
           this.setButtonState('double', true, 
-            playerHand.canDoubleDown() && 
-            !playerHand.isBusted && 
+            activeHandObj.canDoubleDown() && 
+            !activeHandObj.isBusted && 
             playerBalance >= currentBet
           );
+          
+          // Split only available on main hand, before any actions taken
           this.setButtonState('split', true, 
+            activeHand === 'main' &&
             playerHand.canSplit() && 
             !playerHand.isBusted && 
+            playerHand.cards.length === 2 &&
             playerBalance >= currentBet
           );
+          
+          // Surrender only available on main hand, first two cards
           this.setButtonState('surrender', true, 
+            activeHand === 'main' &&
             playerHand.cards.length === 2 && 
-            !playerHand.isBusted
+            !playerHand.isBusted &&
+            !playerSplitHand // Can't surrender if split
           );
         }
         break;

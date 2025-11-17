@@ -4,7 +4,7 @@ import { ImageMapper } from '../utils/ImageMapper';
 export class CardComponent {
   private element: HTMLDivElement;
 
-  constructor(card: Card | null, isFaceDown: boolean = false, delay: number = 0) {
+  constructor(card: Card | null, isFaceDown: boolean = false, delay: number = -1) {
     this.element = document.createElement('div');
     this.element.className = 'card';
     
@@ -18,15 +18,10 @@ export class CardComponent {
       }
     }
 
-    if (delay > 0) {
+    // Add dealing class if delay is >= 0 (including 0 for immediate animation start)
+    if (delay >= 0) {
       this.element.style.animationDelay = `${delay}ms`;
       this.element.classList.add('dealing');
-      // console.log('dealing', this.element);
-      // setTimeout(() => {
-      //   console.log('card dealt', this.element);
-      //   this.element.classList.remove('dealing');
-      //   this.element.style.animationDelay = '0ms';
-      // }, 1000);
     }
   }
 

@@ -155,20 +155,26 @@ class BlackjackApp {
         this.gameController.surrender();
         break;
       case 'betAgain':
-        // Clear animations before starting new hand
+        // Clear animations and dealt cards before starting new hand
         this.dealerHandComponent.clearAnimations();
+        this.dealerHandComponent.clearDealtCards();
         this.playerHandComponent.clearAnimations();
+        this.playerHandComponent.clearDealtCards();
         if (this.playerSplitHandComponent) {
           this.playerSplitHandComponent.clearAnimations();
+          this.playerSplitHandComponent.clearDealtCards();
         }
         this.gameController.betAgain();
         break;
       case 'betAndDealAgain':
-        // Clear animations before starting new hand
+        // Clear animations and dealt cards before starting new hand
         this.dealerHandComponent.clearAnimations();
+        this.dealerHandComponent.clearDealtCards();
         this.playerHandComponent.clearAnimations();
+        this.playerHandComponent.clearDealtCards();
         if (this.playerSplitHandComponent) {
           this.playerSplitHandComponent.clearAnimations();
+          this.playerSplitHandComponent.clearDealtCards();
         }
         const betAmount = state.currentBet || 25;
         this.gameController.betAndDealAgain(betAmount);
@@ -188,15 +194,26 @@ class BlackjackApp {
     );
 
     // Update hands
-    // Show dealer cards when: not dealing/betting, or when blackjack is detected
-    const showDealerCard = (state.phase !== GamePhase.DEALING && 
-                           state.phase !== GamePhase.PLAYER_TURN &&
-                           state.phase !== GamePhase.BETTING) ||
-                           state.dealerHand.isBlackjack ||
-                           state.playerHand.isBlackjack;
+    // Show dealer cards only in DEALER_TURN, RESULT, or GAME_OVER phases
+    // Never reveal during PLAYER_TURN or when insurance is being decided
+    const showDealerCard = state.phase === GamePhase.DEALER_TURN ||
+                           state.phase === GamePhase.RESULT ||
+                           state.phase === GamePhase.GAME_OVER;
     
-    this.dealerHandComponent.updateHand(state.dealerHand, showDealerCard);
-    this.playerHandComponent.updateHand(state.playerHand, true);
+    // Determine if this is initial deal (2 cards each, in DEALING phase)
+    const isInitialDeal = state.phase === GamePhase.DEALING &&
+                          state.playerHand.cards.length === 2 &&
+                          state.dealerHand.cards.length === 2;
+    
+    // For initial deal, calculate delays: player(0ms, 400ms), dealer(200ms, 600ms)
+    // Cards are dealt: player(0), dealer(0), player(1), dealer(1)
+    if (isInitialDeal) {
+      this.playerHandComponent.updateHand(state.playerHand, true, 0, true);
+      this.dealerHandComponent.updateHand(state.dealerHand, showDealerCard, 200, true);
+    } else {
+      this.playerHandComponent.updateHand(state.playerHand, true, 0, false);
+      this.dealerHandComponent.updateHand(state.dealerHand, showDealerCard, 0, false);
+    }
 
     // Update split hand if exists
     if (state.playerSplitHand) {
@@ -208,10 +225,22 @@ class BlackjackApp {
           playerHandElement.nextSibling
         );
       }
-      this.playerSplitHandComponent.updateHand(state.playerSplitHand, true);
-    } else if (this.playerSplitHandComponent) {
-      this.playerSplitHandComponent.getElement().remove();
-      this.playerSplitHandComponent = undefined;
+      this.playerSplitHandComponent.updateHand(state.playerSplitHand, true, 0, false);
+      
+      // Highlight active hand
+      if (state.activeHand === 'split') {
+        this.playerSplitHandComponent.getElement().classList.add('active-hand');
+        this.playerHandComponent.getElement().classList.remove('active-hand');
+      } else {
+        this.playerHandComponent.getElement().classList.add('active-hand');
+        this.playerSplitHandComponent.getElement().classList.remove('active-hand');
+      }
+    } else {
+      if (this.playerSplitHandComponent) {
+        this.playerSplitHandComponent.getElement().remove();
+        this.playerSplitHandComponent = undefined;
+      }
+      this.playerHandComponent.getElement().classList.remove('active-hand');
     }
 
     // Update control panel
@@ -222,7 +251,9 @@ class BlackjackApp {
       state.insuranceOffered,
       state.insuranceTaken,
       state.playerBalance,
-      state.currentBet
+      state.currentBet,
+      state.activeHand,
+      state.playerSplitHand
     );
 
     // Update score display

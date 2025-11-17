@@ -26,7 +26,9 @@ export class GameController {
       startingBalance,
       message: 'Set your starting balance and place a bet to begin',
       insuranceOffered: false,
-      insuranceTaken: false
+      insuranceTaken: false,
+      activeHand: 'main',
+      mainHandComplete: false
     };
   }
 
@@ -72,16 +74,14 @@ export class GameController {
     this.state.playerSplitHand = undefined;
     this.state.insuranceOffered = false;
     this.state.insuranceTaken = false;
+    this.state.activeHand = 'main';
+    this.state.mainHandComplete = false;
 
     // Deal initial cards
     const card1 = this.deckManager.dealCard();
-    console.log('card1', card1);
     const dealerCard1 = this.deckManager.dealCard();
-    console.log('dealerCard1', dealerCard1);
     const card2 = this.deckManager.dealCard();
-    console.log('card2', card2);
     const dealerCard2 = this.deckManager.dealCard();
-    console.log('dealerCard2', dealerCard2);
 
     if (!card1 || !card2 || !dealerCard1 || !dealerCard2) {
       this.state.message = 'Error: Unable to deal cards';
@@ -107,10 +107,9 @@ export class GameController {
 
   private checkForBlackjack(): void {
     if (this.state.playerHand.isBlackjack) {
-      this.state.message = 'Blackjack!';
-      // Dealer still needs to check for blackjack
-      this.state.phase = GamePhase.DEALER_TURN;
-      this.playDealerTurn();
+      this.state.message = 'Blackjack! Continue playing.';
+      // Don't auto-transition to dealer turn - let player continue
+      // Dealer blackjack will be checked in DEALER_TURN phase
     } else {
       this.state.message = 'Your turn';
     }
@@ -127,22 +126,13 @@ export class GameController {
       return;
     }
 
+    // Deduct insurance amount and continue to normal player actions
+    // Insurance payout will be handled after dealer reveals card
     this.state.playerBalance -= insuranceAmount;
     this.state.playerHand.setInsuranceBet(insuranceAmount);
     this.state.insuranceTaken = true;
-
-    // Check if dealer has blackjack
-    if (this.state.dealerHand.isBlackjack) {
-      // Insurance pays 2:1
-      this.state.playerBalance += insuranceAmount * 3; // Return insurance + 2x payout
-      // Original bet pushes
-      this.state.playerBalance += this.state.currentBet;
-      this.state.message = 'Dealer has blackjack. Insurance pays!';
-      this.state.phase = GamePhase.RESULT;
-      this.endHand();
-    } else {
-      this.state.message = 'Insurance lost. Continue playing.';
-    }
+    this.state.insuranceOffered = false; // Hide insurance buttons
+    this.state.message = 'Insurance taken. Your turn';
   }
 
   declineInsurance(): void {
@@ -160,27 +150,66 @@ export class GameController {
       return;
     }
 
-    this.state.playerHand.addCard(card);
+    // Get the active hand
+    const activeHand = this.state.activeHand === 'split' && this.state.playerSplitHand
+      ? this.state.playerSplitHand
+      : this.state.playerHand;
 
-    if (this.state.playerHand.isBusted) {
-      this.state.message = 'Bust! You lose.';
-      this.state.phase = GamePhase.RESULT;
-      this.endHand();
+    activeHand.addCard(card);
+
+    if (activeHand.isBusted) {
+      if (this.state.activeHand === 'main' && this.state.playerSplitHand) {
+        // Main hand busted, switch to split hand
+        this.state.mainHandComplete = true;
+        this.state.activeHand = 'split';
+        this.state.message = 'First hand busted. Playing second hand.';
+      } else {
+        // Current hand busted, check if we can continue with other hand
+        if (this.state.playerSplitHand && this.state.activeHand === 'main') {
+          this.state.mainHandComplete = true;
+          this.state.activeHand = 'split';
+          this.state.message = 'First hand busted. Playing second hand.';
+        } else {
+          // Both hands done or no split, end hand
+          this.state.message = 'Bust! You lose.';
+          this.state.phase = GamePhase.RESULT;
+          this.endHand();
+        }
+      }
     } else {
-      this.state.message = 'Your turn';
+      this.state.message = this.state.activeHand === 'split' ? 'Playing second hand' : 'Your turn';
     }
   }
 
   stand(): void {
     if (this.state.phase !== GamePhase.PLAYER_TURN) return;
 
+    // Mark current hand as complete
+    if (this.state.activeHand === 'main') {
+      this.state.mainHandComplete = true;
+      
+      // If split hand exists, switch to it
+      if (this.state.playerSplitHand) {
+        this.state.activeHand = 'split';
+        this.state.message = 'First hand complete. Playing second hand.';
+        return;
+      }
+    }
+
+    // Both hands complete, proceed to dealer turn
     this.state.phase = GamePhase.DEALER_TURN;
     this.playDealerTurn();
   }
 
   doubleDown(): void {
     if (this.state.phase !== GamePhase.PLAYER_TURN) return;
-    if (!this.state.playerHand.canDoubleDown()) return;
+
+    // Get the active hand
+    const activeHand = this.state.activeHand === 'split' && this.state.playerSplitHand
+      ? this.state.playerSplitHand
+      : this.state.playerHand;
+
+    if (!activeHand.canDoubleDown()) return;
 
     const additionalBet = this.state.currentBet;
     if (additionalBet > this.state.playerBalance) {
@@ -195,15 +224,41 @@ export class GameController {
       return;
     }
 
-    this.state.playerHand.doubleDown(card);
+    activeHand.doubleDown(card);
 
-    if (this.state.playerHand.isBusted) {
-      this.state.message = 'Bust! You lose.';
-      this.state.phase = GamePhase.RESULT;
-      this.endHand();
+    // Mark current hand as complete (double down ends the hand)
+    if (this.state.activeHand === 'main') {
+      this.state.mainHandComplete = true;
+      
+      // If split hand exists and main hand not busted, switch to split
+      if (this.state.playerSplitHand && !activeHand.isBusted) {
+        this.state.activeHand = 'split';
+        this.state.message = 'First hand doubled. Playing second hand.';
+        return;
+      }
+    }
+
+    if (activeHand.isBusted) {
+      // Check if we can continue with other hand
+      if (this.state.playerSplitHand && this.state.activeHand === 'main') {
+        this.state.mainHandComplete = true;
+        this.state.activeHand = 'split';
+        this.state.message = 'First hand busted. Playing second hand.';
+      } else {
+        this.state.message = 'Bust! You lose.';
+        this.state.phase = GamePhase.RESULT;
+        this.endHand();
+      }
     } else {
-      this.state.phase = GamePhase.DEALER_TURN;
-      this.playDealerTurn();
+      // Hand complete, check if we need to switch to split hand
+      if (this.state.activeHand === 'main' && this.state.playerSplitHand) {
+        this.state.activeHand = 'split';
+        this.state.message = 'First hand doubled. Playing second hand.';
+      } else {
+        // Both hands complete, proceed to dealer turn
+        this.state.phase = GamePhase.DEALER_TURN;
+        this.playDealerTurn();
+      }
     }
   }
 
@@ -236,6 +291,9 @@ export class GameController {
     this.state.playerHand.addCard(card1);
     this.state.playerSplitHand.addCard(card2);
 
+    // Set active hand to main and reset completion status
+    this.state.activeHand = 'main';
+    this.state.mainHandComplete = false;
     this.state.message = 'Playing first hand';
   }
 
@@ -260,60 +318,139 @@ export class GameController {
     this.state.dealerHand = new Hand(0);
     dealerCards.forEach(card => this.state.dealerHand.addCard(card));
 
+    // Handle insurance payout after dealer reveals card
+    if (this.state.insuranceTaken && this.state.playerHand.insuranceBet) {
+      const insuranceAmount = this.state.playerHand.insuranceBet;
+      if (this.state.dealerHand.isBlackjack) {
+        // Insurance pays 2:1 if dealer has blackjack
+        this.state.playerBalance += insuranceAmount * 3; // Return insurance + 2x payout
+        // Original bet pushes (will be handled in determineResult)
+      }
+      // If dealer doesn't have blackjack, insurance is lost (already deducted)
+    }
+
     this.determineResult();
   }
 
   private determineResult(): void {
-    const playerValue = this.state.playerHand.getValue();
     const dealerValue = this.state.dealerHand.getValue();
+    let totalPayout = 0;
+    const results: string[] = [];
 
-    // Handle surrender
+    // Handle surrender (only applies to main hand)
     if (this.state.playerHand.isSurrendered) {
-      this.state.phase = GamePhase.RESULT;
-      this.endHand();
-      return;
-    }
-
-    // Handle player bust
-    if (this.state.playerHand.isBusted) {
-      this.state.message = 'You busted. Dealer wins.';
+      this.state.playerBalance += this.state.currentBet / 2; // Return half bet
+      results.push('First hand surrendered');
       this.state.phase = GamePhase.RESULT;
       this.endHand();
       return;
     }
 
     // Handle dealer bust
-    if (this.state.dealerHand.isBusted) {
-      let payout = this.state.currentBet * 2;
-      if (this.state.playerHand.isBlackjack) {
-        payout = Math.floor(this.state.currentBet * 2.5); // 3:2 payout
+    const dealerBusted = this.state.dealerHand.isBusted;
+
+    // Calculate result for main hand
+    if (!this.state.playerHand.isBusted) {
+      const mainPayout = this.calculateHandResult(
+        this.state.playerHand,
+        this.state.currentBet,
+        dealerValue,
+        dealerBusted
+      );
+      totalPayout += mainPayout.payout;
+      if (mainPayout.message) {
+        results.push(`First hand: ${mainPayout.message}`);
       }
-      this.state.playerBalance += payout;
-      this.state.message = 'Dealer busted! You win!';
+    } else {
+      results.push('First hand: Bust');
+    }
+
+    // Calculate result for split hand if it exists
+    if (this.state.playerSplitHand && !this.state.playerSplitHand.isBusted) {
+      const splitPayout = this.calculateHandResult(
+        this.state.playerSplitHand,
+        this.state.currentBet,
+        dealerValue,
+        dealerBusted
+      );
+      totalPayout += splitPayout.payout;
+      if (splitPayout.message) {
+        results.push(`Second hand: ${splitPayout.message}`);
+      }
+    } else if (this.state.playerSplitHand && this.state.playerSplitHand.isBusted) {
+      results.push('Second hand: Bust');
+    }
+
+    // Handle dealer blackjack with insurance (affects both hands)
+    if (this.state.dealerHand.isBlackjack) {
+      if (this.state.insuranceTaken) {
+        // Insurance already paid out in playDealerTurn()
+        // Original bets push (returned) for both hands
+        const betAmount = this.state.currentBet;
+        if (!this.state.playerHand.isBusted) {
+          this.state.playerBalance += betAmount;
+        }
+        if (this.state.playerSplitHand && !this.state.playerSplitHand.isBusted) {
+          this.state.playerBalance += betAmount;
+        }
+        this.state.message = 'Dealer has blackjack. Insurance pays! Original bets returned.';
+      } else {
+        // No insurance, dealer wins all non-busted hands
+        this.state.message = 'Dealer has blackjack. Dealer wins.';
+      }
       this.state.phase = GamePhase.RESULT;
       this.endHand();
       return;
     }
 
-    // Compare values
-    if (this.state.playerHand.isBlackjack && !this.state.dealerHand.isBlackjack) {
-      const payout = Math.floor(this.state.currentBet * 2.5); // 3:2 payout
-      this.state.playerBalance += payout;
-      this.state.message = 'Blackjack! You win!';
-    } else if (playerValue > dealerValue) {
-      const payout = this.state.currentBet * 2;
-      this.state.playerBalance += payout;
-      this.state.message = 'You win!';
-    } else if (playerValue < dealerValue) {
-      this.state.message = 'Dealer wins.';
+    // Apply total payout
+    this.state.playerBalance += totalPayout;
+
+    // Build result message
+    if (results.length > 0) {
+      this.state.message = results.join(' | ');
     } else {
-      // Push
-      this.state.playerBalance += this.state.currentBet;
-      this.state.message = 'Push! It\'s a tie.';
+      this.state.message = 'Hand complete';
     }
 
     this.state.phase = GamePhase.RESULT;
     this.endHand();
+  }
+
+  private calculateHandResult(hand: Hand, bet: number, dealerValue: number, dealerBusted: boolean): { payout: number; message: string } {
+    const handValue = hand.getValue();
+    let payout = 0;
+    let message = '';
+
+    // Handle dealer bust
+    if (dealerBusted) {
+      if (hand.isBlackjack) {
+        payout = Math.floor(bet * 2.5); // 3:2 payout
+        message = 'Blackjack! You win!';
+      } else {
+        payout = bet * 2;
+        message = 'You win!';
+      }
+      return { payout, message };
+    }
+
+    // Compare values
+    if (hand.isBlackjack && !this.state.dealerHand.isBlackjack) {
+      payout = Math.floor(bet * 2.5); // 3:2 payout
+      message = 'Blackjack! You win!';
+    } else if (handValue > dealerValue) {
+      payout = bet * 2;
+      message = 'You win!';
+    } else if (handValue < dealerValue) {
+      payout = 0;
+      message = 'Dealer wins';
+    } else {
+      // Push
+      payout = bet;
+      message = 'Push';
+    }
+
+    return { payout, message };
   }
 
   private endHand(): void {
