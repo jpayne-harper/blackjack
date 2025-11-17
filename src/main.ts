@@ -12,14 +12,14 @@ class BlackjackApp {
   private gameController: GameController;
   private assetLoader: AssetLoader;
   private appContainer: HTMLDivElement;
-  private dealerHandComponent: HandComponent;
-  private playerHandComponent: HandComponent;
+  private dealerHandComponent!: HandComponent;
+  private playerHandComponent!: HandComponent;
   private playerSplitHandComponent?: HandComponent;
-  private controlPanel: ControlPanel;
-  private scoreDisplay: ScoreDisplay;
-  private gameStatus: GameStatus;
-  private bettingInterface: BettingInterface;
-  private loadingOverlay: HTMLDivElement;
+  private controlPanel!: ControlPanel;
+  private scoreDisplay!: ScoreDisplay;
+  private gameStatus!: GameStatus;
+  private bettingInterface!: BettingInterface;
+  private loadingOverlay!: HTMLDivElement;
 
   constructor() {
     this.assetLoader = new AssetLoader();

@@ -3,7 +3,6 @@ import { DeckManager } from './DeckManager';
 import { HandEvaluator } from './HandEvaluator';
 import { DealerAI } from './DealerAI';
 import { Hand } from './Hand';
-import { Card } from '../types/Card';
 
 export class GameController {
   private state: GameState;

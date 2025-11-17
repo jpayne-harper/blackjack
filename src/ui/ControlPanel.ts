@@ -45,7 +45,7 @@ export class ControlPanel {
     return this.container;
   }
 
-  updateState(phase: GamePhase, playerHand: Hand, dealerHand: Hand, insuranceOffered: boolean, insuranceTaken: boolean, playerBalance: number, currentBet: number, activeHand?: 'main' | 'split', playerSplitHand?: Hand): void {
+  updateState(phase: GamePhase, playerHand: Hand, _dealerHand: Hand, insuranceOffered: boolean, insuranceTaken: boolean, playerBalance: number, currentBet: number, activeHand?: 'main' | 'split', playerSplitHand?: Hand): void {
     // Reset all buttons
     this.buttons.forEach(btn => {
       btn.disabled = true;

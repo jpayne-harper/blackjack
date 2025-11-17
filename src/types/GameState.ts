@@ -1,4 +1,4 @@
-import { Hand } from './Hand';
+import { Hand } from '../game/Hand';
 import { Card } from './Card';
 
 export enum GamePhase {

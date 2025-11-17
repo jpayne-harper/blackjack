@@ -1,9 +1,9 @@
 export class BettingInterface {
   private container: HTMLDivElement;
-  private startingBalanceInput: HTMLInputElement;
-  private betInput: HTMLInputElement;
-  private betSlider: HTMLInputElement;
-  private dealButton: HTMLButtonElement;
+  private startingBalanceInput!: HTMLInputElement;
+  private betInput!: HTMLInputElement;
+  private betSlider!: HTMLInputElement;
+  private dealButton!: HTMLButtonElement;
   private onSetStartingBalance: (amount: number) => void;
   private onSetBet: (amount: number) => void;
   private onDeal: () => void;
