@@ -2,8 +2,8 @@
 
 A single-player blackjack web application that can be embedded via iframe. Built with TypeScript, Vite, and SCSS.
 
-[https://github.com/jpayne-harper/CIS216-James-Payne
-](https://jpayne-harper.github.io/blackjack/)
+https://jpayne-harper.github.io/blackjack/
+
 ## Features
 
 - Single-player blackjack game
