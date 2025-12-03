@@ -1,10 +1,10 @@
 export class ChipBettingComponent {
   private container: HTMLDivElement;
-  private chipStack: HTMLDivElement;
-  private bettingArea: HTMLDivElement;
-  private betValueDisplay: HTMLDivElement;
-  private clearBetButton: HTMLButtonElement;
-  private dealButton: HTMLButtonElement;
+  private chipStack!: HTMLDivElement;
+  private bettingArea!: HTMLDivElement;
+  private betValueDisplay!: HTMLDivElement;
+  private clearBetButton!: HTMLButtonElement;
+  private dealButton!: HTMLButtonElement;
   private onDeal: (betAmount: number) => void;
   
   private currentBet: number = 0;
@@ -160,7 +160,6 @@ export class ChipBettingComponent {
     if (this.currentBet === 0) return;
     
     // Animate chips back to stack
-    const betAmount = this.currentBet;
     this.currentBet = 0;
     this.updateBetDisplay();
     this.updateChipDisabling();

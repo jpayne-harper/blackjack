@@ -2,9 +2,6 @@ export class BettingInterface {
   private container: HTMLDivElement;
   private onSetStartingBalance: (amount: number) => void;
   private onSetTableLimits: (minLimit: number) => void;
-  private currentBalance: number = 0;
-  private selectedBalance: number = 0;
-  private selectedTableLimit: number = 0;
 
   constructor(
     onSetStartingBalance: (amount: number) => void,
@@ -46,7 +43,6 @@ export class BettingInterface {
         });
         // Add selected class to clicked button
         button.classList.add('selected');
-        this.selectedBalance = amount;
         this.onSetStartingBalance(amount);
       });
       
@@ -84,7 +80,6 @@ export class BettingInterface {
         });
         // Add selected class to clicked button
         button.classList.add('selected');
-        this.selectedTableLimit = limit;
         this.onSetTableLimits(limit);
       });
       
@@ -100,8 +95,9 @@ export class BettingInterface {
     return this.container;
   }
 
-  updateBalance(balance: number): void {
-    this.currentBalance = balance;
+  updateBalance(_balance: number): void {
+    // Balance update method kept for interface compatibility
+    // but balance is not stored in this component
   }
 
   show(show: boolean): void {
