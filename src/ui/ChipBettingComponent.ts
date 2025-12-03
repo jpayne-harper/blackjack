@@ -1,3 +1,5 @@
+import { ImageMapper } from '../utils/ImageMapper';
+
 export class ChipBettingComponent {
   private container: HTMLDivElement;
   private chipStack!: HTMLDivElement;
@@ -14,12 +16,12 @@ export class ChipBettingComponent {
   
   private chipButtons: Map<number, HTMLButtonElement> = new Map();
   
-  // Chip denominations and their image paths
+  // Chip denominations
   private readonly chipDenominations = [
-    { value: 5, color: 'green', image: '/chips/poker_chip_5_green_97x100.png' },
-    { value: 25, color: 'yellow', image: '/chips/poker_chip_25_yellow_97x100.png' },
-    { value: 100, color: 'blue', image: '/chips/poker_chip_100_blue_97x100.png' },
-    { value: 500, color: 'red', image: '/chips/poker_chip_500_red_97x100.png' }
+    { value: 5, color: 'green' },
+    { value: 25, color: 'yellow' },
+    { value: 100, color: 'blue' },
+    { value: 500, color: 'red' }
   ];
 
   constructor(onDeal: (betAmount: number) => void) {
@@ -41,7 +43,8 @@ export class ChipBettingComponent {
       const chipButton = document.createElement('button');
       chipButton.className = 'chip-button';
       chipButton.dataset.value = chip.value.toString();
-      chipButton.style.backgroundImage = `url(${chip.image})`;
+      const chipImagePath = ImageMapper.getChipImagePath(chip.value, chip.color);
+      chipButton.style.backgroundImage = `url(${chipImagePath})`;
       chipButton.style.backgroundSize = 'contain';
       chipButton.style.backgroundRepeat = 'no-repeat';
       chipButton.style.backgroundPosition = 'center';

@@ -39,5 +39,12 @@ export class ImageMapper {
   static getTableBackgroundPath(): string {
     return `${this.getBasePath()}table/table_bg.jpg`;
   }
+
+  /**
+   * Get chip image path
+   */
+  static getChipImagePath(chipValue: number, color: string): string {
+    return `${this.getBasePath()}chips/poker_chip_${chipValue}_${color}_97x100.png`;
+  }
 }
 
