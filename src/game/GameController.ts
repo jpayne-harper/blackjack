@@ -27,7 +27,9 @@ export class GameController {
       insuranceOffered: false,
       insuranceTaken: false,
       activeHand: 'main',
-      mainHandComplete: false
+      mainHandComplete: false,
+      minTableLimit: 0,
+      maxTableLimit: 0
     };
   }
 
@@ -42,17 +44,48 @@ export class GameController {
     }
     this.state.startingBalance = amount;
     this.state.playerBalance = amount;
-    this.state.phase = GamePhase.BETTING;
-    this.state.message = 'Place your bet';
+    // Stay in IDLE phase - don't auto-transition to BETTING
+    this.state.message = 'Select table limits to continue';
   }
 
-  setBet(amount: number): void {
+  setTableLimits(minLimit: number): void {
+    const validLimits = [10, 15, 25, 50, 100, 250];
+    if (!validLimits.includes(minLimit)) {
+      this.state.message = 'Invalid table limit selected';
+      return;
+    }
+    
+    this.state.minTableLimit = minLimit;
+    this.state.maxTableLimit = minLimit * 10;
+    
+    // Transition to BETTING phase if balance is set
+    if (this.state.startingBalance > 0) {
+      console.log('current phase: ' + GamePhase.BETTING);
+      this.state.phase = GamePhase.BETTING;
+      this.state.message = 'Place your bet';
+    } else {
+      this.state.message = 'Set your starting balance and table limits to begin';
+    }
+  }
+
+  setBet(amount: number, onStateUpdate?: () => void): void {
     if (this.state.phase !== GamePhase.BETTING && this.state.phase !== GamePhase.IDLE) {
       return;
     }
 
-    if (amount < this.MIN_BET) {
-      this.state.message = `Minimum bet is $${this.MIN_BET}`;
+    // Check if table limits are set
+    if (this.state.minTableLimit === 0 || this.state.maxTableLimit === 0) {
+      this.state.message = 'Table limits must be set before betting';
+      return;
+    }
+
+    if (amount < this.state.minTableLimit) {
+      this.state.message = `Minimum bet is $${this.state.minTableLimit}`;
+      return;
+    }
+
+    if (amount > this.state.maxTableLimit) {
+      this.state.message = `Maximum bet is $${this.state.maxTableLimit}`;
       return;
     }
 
@@ -63,11 +96,12 @@ export class GameController {
 
     this.state.currentBet = amount;
     this.state.playerBalance -= amount;
+    console.log('current phase: ' + GamePhase.DEALING);
     this.state.phase = GamePhase.DEALING;
-    this.deal();
+    this.deal(onStateUpdate); // Pass callback to deal
   }
 
-  private deal(): void {
+  private async deal(onStateUpdate?: () => void): Promise<void> {
     this.state.playerHand = new Hand(this.state.currentBet);
     this.state.dealerHand = new Hand(0);
     this.state.playerSplitHand = undefined;
@@ -76,31 +110,57 @@ export class GameController {
     this.state.activeHand = 'main';
     this.state.mainHandComplete = false;
 
-    // Deal initial cards
-    const card1 = this.deckManager.dealCard();
-    const dealerCard1 = this.deckManager.dealCard();
-    const card2 = this.deckManager.dealCard();
-    const dealerCard2 = this.deckManager.dealCard();
+    // Define the dealing order: [playerIndex, dealerIndex, playerIndex, dealerIndex, ...]
+    // For future expansion: could be [player1, player2, dealer, player1, player2, dealer]
+    const dealingOrder: Array<{ target: 'player' | 'dealer', isFaceDown: boolean }> = [
+      { target: 'player', isFaceDown: false },  // Player card 1
+      { target: 'dealer', isFaceDown: false },   // Dealer card 1 (face up)
+      { target: 'player', isFaceDown: false },   // Player card 2
+      { target: 'dealer', isFaceDown: true },    // Dealer card 2 (face down)
+    ];
 
-    if (!card1 || !card2 || !dealerCard1 || !dealerCard2) {
-      this.state.message = 'Error: Unable to deal cards';
-      return;
+    // Deal cards one at a time
+    for (let i = 0; i < dealingOrder.length; i++) {
+      const card = this.deckManager.dealCard();
+      if (!card) {
+        this.state.message = 'Error: Unable to deal cards';
+        return;
+      }
+
+      const { target } = dealingOrder[i];
+      
+      if (target === 'player') {
+        this.state.playerHand.addCard(card);
+      } else {
+        this.state.dealerHand.addCard(card);
+      }
+
+      // Notify UI to update after each card
+      if (onStateUpdate) {
+        onStateUpdate();
+      }
+      
+      // Wait before dealing next card (400ms delay between cards)
+      if (i < dealingOrder.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
-    this.state.playerHand.addCard(card1);
-    this.state.dealerHand.addCard(dealerCard1);
-    this.state.playerHand.addCard(card2);
-    this.state.dealerHand.addCard(dealerCard2);
-
-    
-    // Check for insurance opportunity
+    // After all cards are dealt, check for insurance
     if (HandEvaluator.dealerShowsAce(this.state.dealerHand.cards)) {
       this.state.insuranceOffered = true;
+      console.log('current phase: ' + GamePhase.PLAYER_TURN);
       this.state.phase = GamePhase.PLAYER_TURN;
       this.state.message = 'Dealer shows Ace. Would you like insurance?';
     } else {
+      console.log('current phase: ' + GamePhase.PLAYER_TURN);
       this.state.phase = GamePhase.PLAYER_TURN;
       this.checkForBlackjack();
+    }
+    
+    // Final UI update after dealing is complete
+    if (onStateUpdate) {
+      onStateUpdate();
     }
   }
 
@@ -171,6 +231,7 @@ export class GameController {
         } else {
           // Both hands done or no split, end hand
           this.state.message = 'Bust! You lose.';
+          console.log('current phase: ' + GamePhase.RESULT);
           this.state.phase = GamePhase.RESULT;
           this.endHand();
         }
@@ -196,6 +257,7 @@ export class GameController {
     }
 
     // Both hands complete, proceed to dealer turn
+    console.log('current phase: ' + GamePhase.DEALER_TURN);
     this.state.phase = GamePhase.DEALER_TURN;
     this.playDealerTurn();
   }
@@ -255,6 +317,7 @@ export class GameController {
         this.state.message = 'First hand doubled. Playing second hand.';
       } else {
         // Both hands complete, proceed to dealer turn
+        console.log('current phase: ' + GamePhase.DEALER_TURN);
         this.state.phase = GamePhase.DEALER_TURN;
         this.playDealerTurn();
       }
@@ -303,6 +366,7 @@ export class GameController {
     this.state.playerHand.surrender();
     this.state.playerBalance += this.state.currentBet / 2; // Return half bet
     this.state.message = 'Hand surrendered. You lose half your bet.';
+    console.log('current phase: ' + GamePhase.RESULT);
     this.state.phase = GamePhase.RESULT;
     this.endHand();
   }
@@ -340,6 +404,7 @@ export class GameController {
     if (this.state.playerHand.isSurrendered) {
       this.state.playerBalance += this.state.currentBet / 2; // Return half bet
       results.push('First hand surrendered');
+      console.log('current phase: ' + GamePhase.RESULT);
       this.state.phase = GamePhase.RESULT;
       this.endHand();
       return;
@@ -397,6 +462,7 @@ export class GameController {
         // No insurance, dealer wins all non-busted hands
         this.state.message = 'Dealer has blackjack. Dealer wins.';
       }
+      console.log('current phase: ' + GamePhase.RESULT);
       this.state.phase = GamePhase.RESULT;
       this.endHand();
       return;
@@ -412,6 +478,7 @@ export class GameController {
       this.state.message = 'Hand complete';
     }
 
+    console.log('current phase: ' + GamePhase.RESULT);
     this.state.phase = GamePhase.RESULT;
     this.endHand();
   }
@@ -458,13 +525,14 @@ export class GameController {
     // We'll keep currentBet for betAgain/betAndDealAgain to use
     
     // Check if game over
-    if (this.state.playerBalance < this.MIN_BET) {
+    if (this.state.playerBalance < (this.state.minTableLimit || this.MIN_BET)) {
+      console.log('current phase: ' + GamePhase.GAME_OVER);
       this.state.phase = GamePhase.GAME_OVER;
       this.state.message = 'Game Over! Insufficient balance to continue.';
     }
   }
 
-  betAndDealAgain(betAmount?: number): void {
+  betAndDealAgain(betAmount?: number, onStateUpdate?: () => void): void {
     if (this.state.phase !== GamePhase.RESULT && this.state.phase !== GamePhase.GAME_OVER) {
       return;
     }
@@ -475,7 +543,8 @@ export class GameController {
       return;
     }
 
-    if (this.state.playerBalance < this.MIN_BET) {
+    if (this.state.playerBalance < (this.state.minTableLimit || this.MIN_BET)) {
+      console.log('current phase: ' + GamePhase.GAME_OVER);
       this.state.phase = GamePhase.GAME_OVER;
       this.state.message = 'Game Over! Insufficient balance to continue.';
       return;
@@ -484,8 +553,9 @@ export class GameController {
     // Set the bet and automatically deal
     this.state.currentBet = bet;
     this.state.playerBalance -= bet;
+    console.log('current phase: ' + GamePhase.DEALING);
     this.state.phase = GamePhase.DEALING;
-    this.deal();
+    this.deal(onStateUpdate);
   }
 
   betAgain(): void {
@@ -493,15 +563,17 @@ export class GameController {
       return;
     }
 
-    if (this.state.playerBalance < this.MIN_BET) {
+    if (this.state.playerBalance < (this.state.minTableLimit || this.MIN_BET)) {
+      console.log('current phase: ' + GamePhase.GAME_OVER);
       this.state.phase = GamePhase.GAME_OVER;
       this.state.message = 'Game Over! Insufficient balance to continue.';
       return;
     }
 
     // Set bet to previous amount but stay in BETTING phase for user to adjust
-    const previousBet = this.state.currentBet || this.MIN_BET;
+    const previousBet = this.state.currentBet || (this.state.minTableLimit || this.MIN_BET);
     this.state.currentBet = Math.min(previousBet, this.state.playerBalance);
+    console.log('current phase: ' + GamePhase.BETTING);
     this.state.phase = GamePhase.BETTING;
     this.state.message = 'Adjust your bet amount if needed, then click Deal';
   }

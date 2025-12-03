@@ -8,8 +8,10 @@ export class HandComponent {
   private cardsContainer: HTMLDivElement;
   private deck?: HTMLDivElement;
   private dealtCardIndices: Set<number> = new Set(); // Track which card indices have been dealt
+  private isDealer: boolean; // Store whether this is a dealer hand
 
   constructor(isDealer: boolean = false) {
+    this.isDealer = isDealer; // Store the flag
     this.container = document.createElement('div');
     this.container.className = `hand ${isDealer ? 'dealer-hand' : 'player-hand'}`;
 
@@ -44,7 +46,14 @@ export class HandComponent {
 
     // Add or update cards
     hand.cards.forEach((card, index) => {
-      const isFaceDown = !showHiddenCard && index === 0 && hand.cards.length === 2;
+      // Fix: For dealer, only the second card (index 1) should be face-down
+      // For player, all cards are face-up
+      let isFaceDown = false;
+      if (this.isDealer && !showHiddenCard) {
+        // Dealer's second card (index 1) is face-down until revealed
+        isFaceDown = index === 1;
+      }
+      // Player cards are always face-up (isFaceDown remains false)
       
       // Check if this card index has already been dealt
       const isAlreadyDealt = this.dealtCardIndices.has(index);

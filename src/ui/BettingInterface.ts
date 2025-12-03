@@ -1,116 +1,99 @@
 export class BettingInterface {
   private container: HTMLDivElement;
-  private startingBalanceInput!: HTMLInputElement;
-  private betInput!: HTMLInputElement;
-  private betSlider!: HTMLInputElement;
-  private dealButton!: HTMLButtonElement;
   private onSetStartingBalance: (amount: number) => void;
-  private onSetBet: (amount: number) => void;
-  private onDeal: () => void;
+  private onSetTableLimits: (minLimit: number) => void;
   private currentBalance: number = 0;
-  private minBet: number = 5;
+  private selectedBalance: number = 0;
+  private selectedTableLimit: number = 0;
 
   constructor(
     onSetStartingBalance: (amount: number) => void,
-    onSetBet: (amount: number) => void,
-    onDeal: () => void
+    onSetTableLimits: (minLimit: number) => void
   ) {
     this.onSetStartingBalance = onSetStartingBalance;
-    this.onSetBet = onSetBet;
-    this.onDeal = onDeal;
+    this.onSetTableLimits = onSetTableLimits;
 
     this.container = document.createElement('div');
     this.container.className = 'betting-interface';
 
-    this.createStartingBalanceInput();
-    this.createBetControls();
+    this.createStartingBalanceSelection();
+    this.createTableLimitsSelection();
   }
 
-  private createStartingBalanceInput(): void {
+  private createStartingBalanceSelection(): void {
     const startingBalanceContainer = document.createElement('div');
     startingBalanceContainer.className = 'starting-balance-container';
 
     const label = document.createElement('label');
-    label.textContent = 'Starting Balance: $';
-    label.htmlFor = 'starting-balance';
+    label.textContent = 'Starting Balance:';
+    label.className = 'selection-label';
 
-    this.startingBalanceInput = document.createElement('input');
-    this.startingBalanceInput.type = 'number';
-    this.startingBalanceInput.id = 'starting-balance';
-    this.startingBalanceInput.min = '5';
-    this.startingBalanceInput.step = '1';
-    this.startingBalanceInput.value = '1000';
-    this.startingBalanceInput.className = 'balance-input';
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'balance-options';
 
-    const setBalanceButton = document.createElement('button');
-    setBalanceButton.textContent = 'Set Balance';
-    setBalanceButton.className = 'game-button btn-primary';
-    setBalanceButton.addEventListener('click', () => {
-      const amount = parseFloat(this.startingBalanceInput.value);
-      if (amount >= this.minBet) {
+    const balanceOptions = [500, 1000, 2500, 5000];
+    
+    balanceOptions.forEach(amount => {
+      const button = document.createElement('button');
+      button.textContent = `$${amount.toLocaleString()}`;
+      button.className = 'option-button';
+      button.dataset.value = amount.toString();
+      
+      button.addEventListener('click', () => {
+        // Remove selected class from all buttons
+        buttonContainer.querySelectorAll('.option-button').forEach(btn => {
+          btn.classList.remove('selected');
+        });
+        // Add selected class to clicked button
+        button.classList.add('selected');
+        this.selectedBalance = amount;
         this.onSetStartingBalance(amount);
-      }
+      });
+      
+      buttonContainer.appendChild(button);
     });
 
     startingBalanceContainer.appendChild(label);
-    startingBalanceContainer.appendChild(this.startingBalanceInput);
-    startingBalanceContainer.appendChild(setBalanceButton);
-
+    startingBalanceContainer.appendChild(buttonContainer);
     this.container.appendChild(startingBalanceContainer);
   }
 
-  private createBetControls(): void {
-    const betContainer = document.createElement('div');
-    betContainer.className = 'bet-container';
+  private createTableLimitsSelection(): void {
+    const tableLimitsContainer = document.createElement('div');
+    tableLimitsContainer.className = 'table-limits-container';
 
     const label = document.createElement('label');
-    label.textContent = 'Bet Amount: $';
-    label.htmlFor = 'bet-amount';
+    label.textContent = 'Table Limits (Min):';
+    label.className = 'selection-label';
 
-    this.betInput = document.createElement('input');
-    this.betInput.type = 'number';
-    this.betInput.id = 'bet-amount';
-    this.betInput.min = this.minBet.toString();
-    this.betInput.step = '5';
-    this.betInput.value = '25';
-    this.betInput.className = 'bet-input';
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'table-limit-options';
 
-    this.betSlider = document.createElement('input');
-    this.betSlider.type = 'range';
-    this.betSlider.min = this.minBet.toString();
-    this.betSlider.step = '5';
-    this.betSlider.value = '25';
-    this.betSlider.className = 'bet-slider';
-
-    // Sync input and slider
-    this.betInput.addEventListener('input', () => {
-      const value = Math.max(this.minBet, Math.min(parseFloat(this.betInput.value) || this.minBet, this.currentBalance));
-      this.betInput.value = value.toString();
-      this.betSlider.value = value.toString();
-      this.betSlider.max = Math.max(this.minBet, this.currentBalance).toString();
+    const limitOptions = [10, 15, 25, 50, 100, 250];
+    
+    limitOptions.forEach(limit => {
+      const button = document.createElement('button');
+      button.textContent = `$${limit}`;
+      button.className = 'option-button';
+      button.dataset.value = limit.toString();
+      
+      button.addEventListener('click', () => {
+        // Remove selected class from all buttons
+        buttonContainer.querySelectorAll('.option-button').forEach(btn => {
+          btn.classList.remove('selected');
+        });
+        // Add selected class to clicked button
+        button.classList.add('selected');
+        this.selectedTableLimit = limit;
+        this.onSetTableLimits(limit);
+      });
+      
+      buttonContainer.appendChild(button);
     });
 
-    this.betSlider.addEventListener('input', () => {
-      this.betInput.value = this.betSlider.value;
-    });
-
-    this.dealButton = document.createElement('button');
-    this.dealButton.textContent = 'Deal';
-    this.dealButton.className = 'game-button btn-primary';
-    this.dealButton.addEventListener('click', () => {
-      const amount = parseFloat(this.betInput.value);
-      if (amount >= this.minBet && amount <= this.currentBalance) {
-        this.onSetBet(amount);
-        this.onDeal();
-      }
-    });
-
-    betContainer.appendChild(label);
-    betContainer.appendChild(this.betInput);
-    betContainer.appendChild(this.betSlider);
-    betContainer.appendChild(this.dealButton);
-
-    this.container.appendChild(betContainer);
+    tableLimitsContainer.appendChild(label);
+    tableLimitsContainer.appendChild(buttonContainer);
+    this.container.appendChild(tableLimitsContainer);
   }
 
   getElement(): HTMLDivElement {
@@ -119,17 +102,6 @@ export class BettingInterface {
 
   updateBalance(balance: number): void {
     this.currentBalance = balance;
-    const maxBet = Math.max(this.minBet, balance);
-    this.betSlider.max = maxBet.toString();
-    if (parseFloat(this.betInput.value) > balance) {
-      this.betInput.value = Math.min(balance, parseFloat(this.betInput.value) || this.minBet).toString();
-      this.betSlider.value = this.betInput.value;
-    }
-  }
-
-  setBetAmount(amount: number): void {
-    this.betInput.value = amount.toString();
-    this.betSlider.value = amount.toString();
   }
 
   show(show: boolean): void {

@@ -6,6 +6,7 @@ import { ControlPanel, ControlAction } from './ui/ControlPanel';
 import { ScoreDisplay } from './ui/ScoreDisplay';
 import { GameStatus } from './ui/GameStatus';
 import { BettingInterface } from './ui/BettingInterface';
+import { ChipBettingComponent } from './ui/ChipBettingComponent';
 import { GamePhase } from './types/GameState';
 
 class BlackjackApp {
@@ -19,6 +20,7 @@ class BlackjackApp {
   private scoreDisplay!: ScoreDisplay;
   private gameStatus!: GameStatus;
   private bettingInterface!: BettingInterface;
+  private chipBettingComponent!: ChipBettingComponent;
   private loadingOverlay!: HTMLDivElement;
 
   constructor() {
@@ -70,10 +72,20 @@ class BlackjackApp {
     // Create betting interface
     this.bettingInterface = new BettingInterface(
       (amount) => this.handleSetStartingBalance(amount),
-      (amount) => this.handleSetBet(amount),
-      () => {}
+      (minLimit) => this.handleSetTableLimits(minLimit)
     );
     gameContainer.appendChild(this.bettingInterface.getElement());
+
+    // Create chip betting component
+    this.chipBettingComponent = new ChipBettingComponent(
+      (betAmount) => this.handleSetBet(betAmount)
+    );
+    // Position it below player hand
+    const playerHandElement = this.playerHandComponent.getElement();
+    playerHandElement.parentNode?.insertBefore(
+      this.chipBettingComponent.getElement(),
+      playerHandElement.nextSibling
+    );
 
     this.appContainer.appendChild(gameContainer);
   }
@@ -124,8 +136,19 @@ class BlackjackApp {
     this.updateUI();
   }
 
+  private handleSetTableLimits(minLimit: number): void {
+    this.gameController.setTableLimits(minLimit);
+    this.updateUI();
+  }
+
   private handleSetBet(amount: number): void {
-    this.gameController.setBet(amount);
+    this.gameController.setBet(amount, () => {
+      // This callback is called after each card is dealt
+      this.updateUI();
+    });
+    // Reset chip betting component bet after placing bet
+    this.chipBettingComponent.updateCurrentBet(0);
+    // Initial UI update (before any cards are dealt)
     this.updateUI();
   }
 
@@ -177,11 +200,20 @@ class BlackjackApp {
           this.playerSplitHandComponent.clearDealtCards();
         }
         const betAmount = state.currentBet || 25;
-        this.gameController.betAndDealAgain(betAmount);
+        this.gameController.betAndDealAgain(betAmount, () => {
+          // This callback is called after each card is dealt
+          this.updateUI();
+        });
+        // Initial UI update
+        this.updateUI();
         break;
     }
 
-    this.updateUI();
+    // Note: We don't call updateUI() here anymore for betAndDealAgain
+    // because it's handled by the callback
+    if (action !== 'betAndDealAgain') {
+      this.updateUI();
+    }
   }
 
   private updateUI(): void {
@@ -193,23 +225,51 @@ class BlackjackApp {
       this.getMessageType(state.phase)
     );
 
+    // Phase-based element visibility
+    if (state.phase === GamePhase.IDLE) {
+      // Hide game elements in IDLE phase
+      this.dealerHandComponent.getElement().style.display = 'none';
+      this.playerHandComponent.getElement().style.display = 'none';
+      this.controlPanel.getElement().style.display = 'none';
+      this.scoreDisplay.getElement().style.display = 'none';
+      this.chipBettingComponent.show(false);
+      this.bettingInterface.show(true);
+    } else if (state.phase === GamePhase.BETTING) {
+      // Show game elements, hide betting interface, show chip betting
+      this.dealerHandComponent.getElement().style.display = 'block';
+      this.playerHandComponent.getElement().style.display = 'block';
+      this.controlPanel.getElement().style.display = 'block';
+      this.scoreDisplay.getElement().style.display = 'block';
+      this.bettingInterface.show(false);
+      this.chipBettingComponent.show(true);
+      
+      // Update chip betting component
+      this.chipBettingComponent.updateBalance(state.playerBalance);
+      this.chipBettingComponent.updateTableLimits(state.minTableLimit, state.maxTableLimit);
+      this.chipBettingComponent.updateCurrentBet(state.currentBet);
+    } else {
+      // Show all game elements, hide betting interfaces
+      this.dealerHandComponent.getElement().style.display = 'block';
+      this.playerHandComponent.getElement().style.display = 'block';
+      this.controlPanel.getElement().style.display = 'block';
+      this.scoreDisplay.getElement().style.display = 'block';
+      this.bettingInterface.show(false);
+      this.chipBettingComponent.show(false);
+    }
+
     // Update hands
     // Show dealer cards only in DEALER_TURN, RESULT, or GAME_OVER phases
-    // Never reveal during PLAYER_TURN or when insurance is being decided
+    // During DEALING phase, show dealer's first card but keep second card face down
     const showDealerCard = state.phase === GamePhase.DEALER_TURN ||
                            state.phase === GamePhase.RESULT ||
                            state.phase === GamePhase.GAME_OVER;
     
-    // Determine if this is initial deal (2 cards each, in DEALING phase)
-    const isInitialDeal = state.phase === GamePhase.DEALING &&
-                          state.playerHand.cards.length === 2 &&
-                          state.dealerHand.cards.length === 2;
-    
-    // For initial deal, calculate delays: player(0ms, 400ms), dealer(200ms, 600ms)
-    // Cards are dealt: player(0), dealer(0), player(1), dealer(1)
-    if (isInitialDeal) {
-      this.playerHandComponent.updateHand(state.playerHand, true, 0, true);
-      this.dealerHandComponent.updateHand(state.dealerHand, showDealerCard, 200, true);
+    // During dealing phase, show cards as they're dealt (dealer's second card stays face down)
+    if (state.phase === GamePhase.DEALING) {
+      // Cards are added one at a time, so update with current state
+      // Dealer's second card should be face down during dealing
+      this.playerHandComponent.updateHand(state.playerHand, true, 0, false);
+      this.dealerHandComponent.updateHand(state.dealerHand, false, 0, false); // Don't show hidden card during dealing
     } else {
       this.playerHandComponent.updateHand(state.playerHand, true, 0, false);
       this.dealerHandComponent.updateHand(state.dealerHand, showDealerCard, 0, false);
@@ -259,17 +319,8 @@ class BlackjackApp {
     // Update score display
     this.scoreDisplay.update(state);
 
-    // Update betting interface
+    // Update betting interface balance (for display)
     this.bettingInterface.updateBalance(state.playerBalance);
-    const showBetting = state.phase === GamePhase.IDLE || 
-                       state.phase === GamePhase.BETTING ||
-                       state.phase === GamePhase.GAME_OVER;
-    this.bettingInterface.show(showBetting);
-    
-    // If in betting phase and there's a current bet, set it in the interface
-    if (state.phase === GamePhase.BETTING && state.currentBet > 0) {
-      this.bettingInterface.setBetAmount(state.currentBet);
-    }
 
     // Reveal dealer card when transitioning to dealer turn
     if (state.phase === GamePhase.DEALER_TURN) {
