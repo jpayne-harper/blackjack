@@ -1,17 +1,27 @@
+@use 'sass:color';
 @use '../variables' as *;
 @use '../mixins' as *;
 
 .control-panel {
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: $spacing-sm;
+  flex-direction: column;
+  align-items: center;
+  gap: $spacing-md;
   margin: $spacing-lg 0;
   padding: $spacing-md;
 }
 
+.control-panel-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+  width: 100%;
+}
+
 .game-button {
   padding: $spacing-sm $spacing-lg;
+  margin: $spacing-sm;
   font-size: 1rem;
   font-weight: bold;
   border-radius: 6px;
@@ -26,6 +36,60 @@
 
   &.btn-secondary {
     @include button-secondary;
+  }
+
+  &.btn-yellow {
+    background-color: #dbbe01;
+    color: #ffffff;
+    border: 2px solid transparent;
+    transition: all $transition-fast;
+
+    &:hover {
+      background-color: color.adjust(#dbbe01, $lightness: -10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    &:active {
+      border: 3px solid rgba(219, 190, 1, 0.6);
+      transform: translateY(0);
+    }
+  }
+
+  &.btn-green {
+    background-color: #29b100;
+    color: #ffffff;
+    border: 2px solid transparent;
+    transition: all $transition-fast;
+
+    &:hover {
+      background-color: color.adjust(#29b100, $lightness: -10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    &:active {
+      border: 3px solid rgba(41, 177, 0, 0.6);
+      transform: translateY(0);
+    }
+  }
+
+  &.btn-red {
+    background-color: #bc1409;
+    color: #ffffff;
+    border: 2px solid transparent;
+    transition: all $transition-fast;
+
+    &:hover {
+      background-color: color.adjust(#bc1409, $lightness: -10%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    &:active {
+      border: 3px solid rgba(188, 20, 9, 0.6);
+      transform: translateY(0);
+    }
   }
 
   &.bet-deal-again {

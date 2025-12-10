@@ -62,10 +62,22 @@ export class HandComponent {
       const existingCard = existingCards[index];
       const hasExistingDealtClass = existingCard?.classList.contains('dealt');
       
-      // If card already has 'dealt' class, don't re-animate
+      // If card already has 'dealt' class, update it without re-animating
       if (isAlreadyDealt || hasExistingDealtClass) {
         // Card already dealt, just update it without animation
         if (existingCard) {
+          // Always update the card image to ensure it matches the current card object
+          const expectedImage = isFaceDown 
+            ? ImageMapper.getCardBackPath()
+            : ImageMapper.getCardImagePath(card);
+          const currentImage = existingCard.style.backgroundImage;
+          const expectedImageUrl = `url(${expectedImage})`;
+          
+          // Update image if it doesn't match (handles card changes after split)
+          if (currentImage !== expectedImageUrl) {
+            existingCard.style.backgroundImage = expectedImageUrl;
+          }
+          
           // Update face-down/face-up state if needed
           if (isFaceDown && !existingCard.classList.contains('face-down')) {
             existingCard.classList.remove('face-up');

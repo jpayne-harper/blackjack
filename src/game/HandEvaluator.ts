@@ -68,11 +68,26 @@ export class HandEvaluator {
   }
 
   /**
-   * Check if hand can be split (same rank, 2 cards)
+   * Get the numeric value of a card (for split comparison)
+   * Ace = 11, Face cards (J/Q/K) and 10 = 10, Number cards = their rank value
+   */
+  static getCardValue(card: Card): number {
+    if (card.rank === Rank.ACE) {
+      return 11;
+    } else if ([Rank.TEN, Rank.JACK, Rank.QUEEN, Rank.KING].includes(card.rank)) {
+      return 10;
+    } else {
+      return parseInt(card.rank);
+    }
+  }
+
+  /**
+   * Check if hand can be split (same value, 2 cards)
+   * Allows splitting cards with same value (e.g., Jack + Queen, King + 10)
    */
   static canSplit(cards: Card[]): boolean {
     if (cards.length !== 2) return false;
-    return cards[0].rank === cards[1].rank;
+    return this.getCardValue(cards[0]) === this.getCardValue(cards[1]);
   }
 
   /**

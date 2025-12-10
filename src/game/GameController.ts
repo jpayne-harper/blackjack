@@ -56,7 +56,7 @@ export class GameController {
     }
     
     this.state.minTableLimit = minLimit;
-    this.state.maxTableLimit = minLimit * 10;
+    this.state.maxTableLimit = minLimit * 100;
     
     // Transition to BETTING phase if balance is set
     if (this.state.startingBalance > 0) {
@@ -324,7 +324,7 @@ export class GameController {
     }
   }
 
-  split(): void {
+  async split(onStateUpdate?: () => void): Promise<void> {
     if (this.state.phase !== GamePhase.PLAYER_TURN) return;
     if (!this.state.playerHand.canSplit()) return;
 
@@ -336,27 +336,53 @@ export class GameController {
 
     this.state.playerBalance -= additionalBet;
 
-    // Create split hand
-    const splitCard = this.state.playerHand.cards.pop()!;
+    // Create split hand - explicitly remove the second card (index 1)
+    // This ensures the card is properly removed from the main hand
+    const splitCard = this.state.playerHand.cards.splice(1, 1)[0];
     this.state.playerHand.isSplit = true;
     this.state.playerSplitHand = new Hand(additionalBet, true);
     this.state.playerSplitHand.addCard(splitCard);
 
-    // Deal one card to each hand
+    // Update UI to show card moved to split hand
+    if (onStateUpdate) {
+      onStateUpdate();
+    }
+
+    // Deal first card to main hand
     const card1 = this.deckManager.dealCard();
-    const card2 = this.deckManager.dealCard();
-    if (!card1 || !card2) {
-      this.state.message = 'Error: Unable to deal cards';
+    if (!card1) {
+      this.state.message = 'Error: Unable to deal card';
       return;
     }
 
     this.state.playerHand.addCard(card1);
+    
+    // Update UI after first card is dealt
+    if (onStateUpdate) {
+      onStateUpdate();
+    }
+
+    // Wait before dealing second card
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Deal second card to split hand
+    const card2 = this.deckManager.dealCard();
+    if (!card2) {
+      this.state.message = 'Error: Unable to deal card';
+      return;
+    }
+
     this.state.playerSplitHand.addCard(card2);
 
     // Set active hand to main and reset completion status
     this.state.activeHand = 'main';
     this.state.mainHandComplete = false;
     this.state.message = 'Playing first hand';
+
+    // Final UI update after both cards are dealt
+    if (onStateUpdate) {
+      onStateUpdate();
+    }
   }
 
   surrender(): void {

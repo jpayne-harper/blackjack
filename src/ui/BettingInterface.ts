@@ -68,8 +68,9 @@ export class BettingInterface {
     const limitOptions = [10, 15, 25, 50, 100, 250];
     
     limitOptions.forEach(limit => {
+      const maxLimit = limit * 100;
       const button = document.createElement('button');
-      button.textContent = `$${limit}`;
+      button.textContent = `$${limit} - $${maxLimit.toLocaleString()}`;
       button.className = 'option-button';
       button.dataset.value = limit.toString();
       

@@ -5,6 +5,8 @@ export type ControlAction = 'hit' | 'stand' | 'double' | 'split' | 'acceptInsura
 
 export class ControlPanel {
   private container: HTMLDivElement;
+  private primaryRow: HTMLDivElement;
+  private secondaryRow: HTMLDivElement;
   private buttons: Map<ControlAction, HTMLButtonElement> = new Map();
   private onAction: (action: ControlAction) => void;
 
@@ -12,33 +14,70 @@ export class ControlPanel {
     this.onAction = onAction;
     this.container = document.createElement('div');
     this.container.className = 'control-panel';
+    
+    // Create two rows for button layout
+    this.primaryRow = document.createElement('div');
+    this.primaryRow.className = 'control-panel-row primary-row';
+    this.secondaryRow = document.createElement('div');
+    this.secondaryRow.className = 'control-panel-row secondary-row';
+    
+    this.container.appendChild(this.primaryRow);
+    this.container.appendChild(this.secondaryRow);
+    
     this.createButtons();
   }
 
   private createButtons(): void {
-    const buttonConfigs: { action: ControlAction; label: string; className: string }[] = [
-      { action: 'hit', label: 'Hit', className: 'btn-primary' },
-      { action: 'stand', label: 'Stand', className: 'btn-primary' },
-      { action: 'double', label: 'Double Down', className: 'btn-secondary' },
-      { action: 'split', label: 'Split', className: 'btn-secondary' },
-      { action: 'acceptInsurance', label: 'Accept', className: 'btn-secondary' },
-      { action: 'declineInsurance', label: 'Decline', className: 'btn-secondary' },
-      { action: 'surrender', label: 'Surrender', className: 'btn-secondary' },
-      { action: 'betAgain', label: 'Bet Again', className: 'btn-primary' },
-      { action: 'betAndDealAgain', label: 'Bet & Deal Again', className: 'btn-primary bet-deal-again' }
+    // Primary row buttons (Hit, Stand)
+    const primaryButtons: { action: ControlAction; label: string; className: string }[] = [
+      { action: 'hit', label: 'Hit', className: 'btn-green' },
+      { action: 'stand', label: 'Stand', className: 'btn-red' }
     ];
 
-    buttonConfigs.forEach(config => {
-      const button = document.createElement('button');
-      button.textContent = config.label;
-      button.className = `game-button ${config.className}`;
-      button.dataset.action = config.action;
-      button.addEventListener('click', () => {
-        this.onAction(config.action);
-      });
-      this.buttons.set(config.action, button);
+    // Secondary row buttons (Double, Split, Surrender)
+    const secondaryButtons: { action: ControlAction; label: string; className: string }[] = [
+      { action: 'double', label: 'Double Down', className: 'btn-yellow' },
+      { action: 'split', label: 'Split', className: 'btn-yellow' },
+      { action: 'surrender', label: 'Surrender', className: 'btn-yellow' }
+    ];
+
+    // Other buttons (insurance, betting)
+    const otherButtons: { action: ControlAction; label: string; className: string }[] = [
+      { action: 'acceptInsurance', label: 'Accept', className: 'btn-secondary' },
+      { action: 'declineInsurance', label: 'Decline', className: 'btn-secondary' },
+      { action: 'betAgain', label: 'Bet Again', className: 'btn-yellow' },
+      { action: 'betAndDealAgain', label: 'Bet & Deal Again', className: 'btn-green bet-deal-again' }
+    ];
+
+    // Create primary row buttons
+    primaryButtons.forEach(config => {
+      const button = this.createButton(config);
+      this.primaryRow.appendChild(button);
+    });
+
+    // Create secondary row buttons
+    secondaryButtons.forEach(config => {
+      const button = this.createButton(config);
+      this.secondaryRow.appendChild(button);
+    });
+
+    // Create other buttons (append to container, not rows)
+    otherButtons.forEach(config => {
+      const button = this.createButton(config);
       this.container.appendChild(button);
     });
+  }
+
+  private createButton(config: { action: ControlAction; label: string; className: string }): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.textContent = config.label;
+    button.className = `game-button ${config.className}`;
+    button.dataset.action = config.action;
+    button.addEventListener('click', () => {
+      this.onAction(config.action);
+    });
+    this.buttons.set(config.action, button);
+    return button;
   }
 
   getElement(): HTMLDivElement {
@@ -51,6 +90,10 @@ export class ControlPanel {
       btn.disabled = true;
       btn.style.display = 'none';
     });
+
+    // Reset row visibility
+    this.primaryRow.style.display = 'none';
+    this.secondaryRow.style.display = 'none';
 
     // Show/hide and enable buttons based on game phase
     switch (phase) {
@@ -69,9 +112,13 @@ export class ControlPanel {
           // Get the active hand for split scenarios
           const activeHandObj = (activeHand === 'split' && playerSplitHand) ? playerSplitHand : playerHand;
           
-          // Show normal player action buttons based on active hand
+          // Show primary row (Hit, Stand)
+          this.primaryRow.style.display = 'flex';
           this.setButtonState('hit', true, activeHandObj.isBusted === false);
           this.setButtonState('stand', true, activeHandObj.isBusted === false);
+          
+          // Show secondary row (Double, Split, Surrender)
+          this.secondaryRow.style.display = 'flex';
           this.setButtonState('double', true, 
             activeHandObj.canDoubleDown() && 
             !activeHandObj.isBusted && 
@@ -79,13 +126,13 @@ export class ControlPanel {
           );
           
           // Split only available on main hand, before any actions taken
-          this.setButtonState('split', true, 
-            activeHand === 'main' &&
-            playerHand.canSplit() && 
-            !playerHand.isBusted && 
-            playerHand.cards.length === 2 &&
-            playerBalance >= currentBet
-          );
+          // Only show if canSplit() returns true
+          const canSplit = activeHand === 'main' &&
+                          playerHand.canSplit() && 
+                          !playerHand.isBusted && 
+                          playerHand.cards.length === 2 &&
+                          playerBalance >= currentBet;
+          this.setButtonState('split', canSplit, canSplit);
           
           // Surrender only available on main hand, first two cards
           this.setButtonState('surrender', true, 

@@ -166,7 +166,17 @@ class BlackjackApp {
         this.gameController.doubleDown();
         break;
       case 'split':
-        this.gameController.split();
+        // Clear dealt cards on both hands before split
+        this.playerHandComponent.clearDealtCards();
+        if (this.playerSplitHandComponent) {
+          this.playerSplitHandComponent.clearDealtCards();
+        }
+        // Call split with callback to update UI after each step
+        this.gameController.split(() => {
+          this.updateUI();
+        });
+        // Initial UI update
+        this.updateUI();
         break;
       case 'acceptInsurance':
         this.gameController.takeInsurance();
@@ -226,18 +236,23 @@ class BlackjackApp {
     );
 
     // Phase-based element visibility
+    // Hand visibility: Hide in IDLE, BETTING, GAME_OVER; Show in DEALING, PLAYER_TURN, DEALER_TURN, RESULT
+    const shouldShowHands = state.phase === GamePhase.DEALING ||
+                            state.phase === GamePhase.PLAYER_TURN ||
+                            state.phase === GamePhase.DEALER_TURN ||
+                            state.phase === GamePhase.RESULT;
+    
+    this.dealerHandComponent.getElement().style.display = shouldShowHands ? 'block' : 'none';
+    this.playerHandComponent.getElement().style.display = shouldShowHands ? 'block' : 'none';
+    
     if (state.phase === GamePhase.IDLE) {
       // Hide game elements in IDLE phase
-      this.dealerHandComponent.getElement().style.display = 'none';
-      this.playerHandComponent.getElement().style.display = 'none';
       this.controlPanel.getElement().style.display = 'none';
       this.scoreDisplay.getElement().style.display = 'none';
       this.chipBettingComponent.show(false);
       this.bettingInterface.show(true);
     } else if (state.phase === GamePhase.BETTING) {
       // Show game elements, hide betting interface, show chip betting
-      this.dealerHandComponent.getElement().style.display = 'block';
-      this.playerHandComponent.getElement().style.display = 'block';
       this.controlPanel.getElement().style.display = 'block';
       this.scoreDisplay.getElement().style.display = 'block';
       this.bettingInterface.show(false);
@@ -249,8 +264,6 @@ class BlackjackApp {
       this.chipBettingComponent.updateCurrentBet(state.currentBet);
     } else {
       // Show all game elements, hide betting interfaces
-      this.dealerHandComponent.getElement().style.display = 'block';
-      this.playerHandComponent.getElement().style.display = 'block';
       this.controlPanel.getElement().style.display = 'block';
       this.scoreDisplay.getElement().style.display = 'block';
       this.bettingInterface.show(false);
@@ -284,6 +297,8 @@ class BlackjackApp {
           this.playerSplitHandComponent.getElement(),
           playerHandElement.nextSibling
         );
+        // Clear dealt cards when split hand component is first created
+        this.playerSplitHandComponent.clearDealtCards();
       }
       this.playerSplitHandComponent.updateHand(state.playerSplitHand, true, 0, false);
       

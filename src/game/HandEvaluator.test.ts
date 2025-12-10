@@ -102,7 +102,7 @@ describe('HandEvaluator', () => {
   });
 
   describe('canSplit', () => {
-    it('should allow split for same rank', () => {
+    it('should allow split for same rank (same value)', () => {
       const cards: Card[] = [
         { suit: Suit.HEARTS, rank: Rank.EIGHT, value: 8, imagePath: '' },
         { suit: Suit.CLUBS, rank: Rank.EIGHT, value: 8, imagePath: '' }
@@ -110,7 +110,47 @@ describe('HandEvaluator', () => {
       expect(HandEvaluator.canSplit(cards)).toBe(true);
     });
 
-    it('should not allow split for different ranks', () => {
+    it('should allow split for same value (Jack + Queen)', () => {
+      const cards: Card[] = [
+        { suit: Suit.HEARTS, rank: Rank.JACK, value: 10, imagePath: '' },
+        { suit: Suit.CLUBS, rank: Rank.QUEEN, value: 10, imagePath: '' }
+      ];
+      expect(HandEvaluator.canSplit(cards)).toBe(true);
+    });
+
+    it('should allow split for same value (King + 10)', () => {
+      const cards: Card[] = [
+        { suit: Suit.HEARTS, rank: Rank.KING, value: 10, imagePath: '' },
+        { suit: Suit.CLUBS, rank: Rank.TEN, value: 10, imagePath: '' }
+      ];
+      expect(HandEvaluator.canSplit(cards)).toBe(true);
+    });
+
+    it('should allow split for same value (Jack + Jack)', () => {
+      const cards: Card[] = [
+        { suit: Suit.HEARTS, rank: Rank.JACK, value: 10, imagePath: '' },
+        { suit: Suit.CLUBS, rank: Rank.JACK, value: 10, imagePath: '' }
+      ];
+      expect(HandEvaluator.canSplit(cards)).toBe(true);
+    });
+
+    it('should not allow split for different values (Jack + 9)', () => {
+      const cards: Card[] = [
+        { suit: Suit.HEARTS, rank: Rank.JACK, value: 10, imagePath: '' },
+        { suit: Suit.CLUBS, rank: Rank.NINE, value: 9, imagePath: '' }
+      ];
+      expect(HandEvaluator.canSplit(cards)).toBe(false);
+    });
+
+    it('should not allow split for different values (Ace + 10)', () => {
+      const cards: Card[] = [
+        { suit: Suit.HEARTS, rank: Rank.ACE, value: 11, imagePath: '' },
+        { suit: Suit.CLUBS, rank: Rank.TEN, value: 10, imagePath: '' }
+      ];
+      expect(HandEvaluator.canSplit(cards)).toBe(false);
+    });
+
+    it('should not allow split for different values (8 + 9)', () => {
       const cards: Card[] = [
         { suit: Suit.HEARTS, rank: Rank.EIGHT, value: 8, imagePath: '' },
         { suit: Suit.CLUBS, rank: Rank.NINE, value: 9, imagePath: '' }
